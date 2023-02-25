@@ -1,0 +1,39 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
+#include "StaticLibrary.generated.h"
+
+class ABaseElement;
+/**
+ * 
+ */
+UCLASS()
+class DREAMPROJECT_API UStaticLibrary : public UObject
+{
+	GENERATED_BODY()
+public:
+	static float CaculateFinalDamage(float BaseDamage,int CritChance,TSubclassOf<ABaseElement> AttackerElement,TSubclassOf<ABaseElement> DefenderElement);
+
+	//110   判断是否是敌人
+	static bool bIsEnemy(AActor* Actor);
+
+	//模板
+	template<typename TEnum>
+	static FORCEINLINE FString GetEnumValueAsString(const FString& Name,TEnum Value)
+	{
+		const UEnum* EnumPtr = FindObject<UEnum>(ANY_PACKAGE,*Name,true);
+		if(!EnumPtr)
+		{
+			return FString("InValid");
+		}
+		else
+		{
+			FString TempString = EnumPtr->GetNameByValue((int64)Value).ToString();
+			TempString.RemoveFromStart(Name+"::");
+			return TempString;
+		}
+	};
+};
