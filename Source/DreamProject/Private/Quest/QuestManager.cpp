@@ -129,6 +129,7 @@ void AQuestManager::OnPlayerMove()
 {
 	if(CurrentGoal)
 	{
+		//UE_LOG(LogTemp,Warning,TEXT("玩家移动显示ui"))
 		MainUserWidget->MiniMap->SetDistanceText(GetDistanceToGoal());
 		UpdateDirectionArrow();
 		if(GetDistanceToGoal() > ShowHintDistance)
@@ -142,7 +143,7 @@ void AQuestManager::OnPlayerMove()
 	}
 }
 
-void AQuestManager::OnEnemyKilled(TSubclassOf<ANormalEnemy> Enemy)
+void AQuestManager::OnEnemyKilled(TSubclassOf<class ANormalEnemy> Enemy)
 {
 	//for(ABaseQuest* CurrentQuests : CurrentQuestActors)
 	for(int j = 0;j < CurrentQuestActors.Num();j++)
@@ -174,8 +175,8 @@ void AQuestManager::OnEnemyKilled(TSubclassOf<ANormalEnemy> Enemy)
 	}
 }
 
-//任务完成
-void AQuestManager::OnObjectFound(TSubclassOf<ABaseQuestProp> Prop)
+//寻找任务完成
+void AQuestManager::OnObjectFound(TSubclassOf<class ABaseQuestProp> Prop)
 {
 	//for(ABaseQuest* TempCurrentQuest : CurrentQuestActors)
 	for(int j = 0; j < CurrentQuestActors.Num();j++)
@@ -185,6 +186,12 @@ void AQuestManager::OnObjectFound(TSubclassOf<ABaseQuestProp> Prop)
 			if(CurrentQuestActors[j]->CurrentGoals[i].Type == EGoalTypes::Find && CurrentQuestActors[j]->CurrentGoals[i].GoalClass == Prop)
 			{
 				CurrentQuestActors[j]->OnSubGoalCompleted(CurrentQuestActors[j]->CurrentGoalIndices[i],true);
+				// if(CurrentGoal)
+				// {
+				// 	CurrentGoal->Destroy();
+				// 	CurrentGoal = nullptr;
+				// 	//UE_LOG(LogTemp,Warning,TEXT("寻找任务完成，销毁UI"))
+				// }
 				if(bCurrentQuestFinished)
 				{
 					bCurrentQuestFinished = false;
@@ -195,7 +202,7 @@ void AQuestManager::OnObjectFound(TSubclassOf<ABaseQuestProp> Prop)
 	}
 }
 
-void AQuestManager::OnTalkToNPC(TSubclassOf<ABaseNPC> NPC, int NPCId)
+void AQuestManager::OnTalkToNPC(TSubclassOf<class ABaseNPC> NPC, int NPCId)
 {
 	//for(ABaseQuest* TempCurrentQuest : CurrentQuestActors)
 	for(int j = 0; j < CurrentQuestActors.Num();j++)
@@ -236,6 +243,8 @@ void AQuestManager::OnQuestEnd(ABaseQuest* Quest)
 		if(CurrentGoal)  //地图上目标的UI显示
 		{
 			CurrentGoal->Destroy();
+			CurrentGoal = nullptr;
+			//UE_LOG(LogTemp,Warning,TEXT("摧毁当前目标的实例"));
 		}
 		MainUserWidget->MiniMap->DistanceBox->SetVisibility(ESlateVisibility::Hidden);
 		MainUserWidget->MiniMap->DirectionArrow->SetVisibility(ESlateVisibility::Hidden);
@@ -248,11 +257,11 @@ void AQuestManager::OnQuestEnd(ABaseQuest* Quest)
 	if(Quest->bSelectInJournal())
 	{
 		MainUserWidget->QuestJournal->SelectedQuest = nullptr;
-		MainUserWidget->QuestJournal->OnQuestClicked(nullptr);	
+		MainUserWidget->QuestJournal->OnQuestClicked(nullptr);
 	}
 	if(Quest->CurrentState == EQuestStates::CompletedQuest)
 	{
 		PlayerCharacter->IncreaseCurrentExp(Quest->QuestInfo.CompletionReward.Experience);
+		PlayerCharacter->IncreaseCoin(Quest->QuestInfo.CompletionReward.Coin);
 	}
 }
-

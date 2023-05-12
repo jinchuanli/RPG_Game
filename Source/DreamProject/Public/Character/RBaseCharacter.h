@@ -2,13 +2,18 @@
 
 #pragma once
 
+
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "RPGGameInstance.h"
+#include "Abilities/GameplayAbility.h"
 #include "Camera/CameraComponent.h"
 #include "DamageAbleInterface/DamageAbleInterface.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Quest/QuestEnum.h"
 #include "Skill/SkillEnum.h"
+#include "Character/BasePlayerController.h"
 #include "RBaseCharacter.generated.h"
 
 class ABaseSkill;
@@ -16,6 +21,12 @@ class UTexture2D;
 class ABaseElement;
 class UBuffWidget;
 class ABuffSkill;
+class AMiniCam;
+class AArrow;
+class USplineMeshComponent;
+class USplineComponent;
+class UStaticMesh;
+class ABow;
 
 //技能的阶段(等级),阶段不同属性不同
 USTRUCT()
@@ -50,7 +61,7 @@ struct FSkillStage
 	float CastingTime;//释放的时间
 
 	UPROPERTY(EditAnywhere,Category=SkillData)
-	float ManaCost;//魔法消耗时间
+	float ManaCost;//魔法消耗
 
 	UPROPERTY(EditAnywhere,Category=SkillData)
 	float MisiileSpeed;//投掷类技能的速度
@@ -77,10 +88,10 @@ struct FSkillInfo
 };
 
 UCLASS()
-class DREAMPROJECT_API ARBaseCharacter : public ACharacter,public IDamageAbleInterface
+class DREAMPROJECT_API ARBaseCharacter : public ACharacter,public IDamageAbleInterface,public IAbilitySystemInterface
 {
 	GENERATED_BODY()
-
+	friend class ASwordActor;
 public:
 	// Sets default values for this character's properties
 	ARBaseCharacter();
@@ -88,16 +99,21 @@ public:
 public:
 	UPROPERTY(BlueprintReadOnly)
 	class UMainUserWidget* MainUserWidget;
-	class APlayerController *PC;
+
+	UPROPERTY(BlueprintReadWrite,Category=Respawn)
+	ABasePlayerController* PC;
+
 protected:
 	//摄像机组件
 	UPROPERTY(VisibleAnywhere,Category="Camera")
 	class UCameraComponent *FollowCamera;
 
 	//弹簧臂组件  VisibleAnywhere不仅能看见还可以改变值
-	UPROPERTY(VisibleAnywhere,Category="Camera")
+	UPROPERTY(BlueprintReadWrite,VisibleAnywhere,Category="Camera")
 	class USpringArmComponent *CameraBoom;
-
+	UPROPERTY(BlueprintReadWrite,VisibleAnywhere,Category="Camera")
+	float CameraBoomTargetLength = 600.0f;
+	
 	//TSubclassOf 赋值的时候赋值到子类
 	UPROPERTY(EditAnywhere,Category=Mouse)
 	TSubclassOf<class ACursorDecal> CursorDecal;
@@ -113,6 +129,7 @@ protected:
 	UPROPERTY(EditAnywhere,Category=Camera)
 	float CameraZoomAlpha = 25.f;
 
+	//头像
 	UPROPERTY(VisibleAnywhere,Category=Camera)
 	class USceneCaptureComponent2D* PortraitComponent;
 	
@@ -124,7 +141,7 @@ protected:
 
 	void OnSetDestinationPressed();
 
-	void SetNewMoveDestination(const FVector DesLocation);
+//	void SetNewMoveDestination(const FVector DesLocation);
 	
 	void MoveToCursor();
 	//取消鼠标移动
@@ -134,13 +151,15 @@ protected:
 	void CameraZoomOut();
 
 protected:
+	friend class AItemHealthPotion;
+	
 	UPROPERTY(VisibleAnywhere,Category=PlayerInfo)
 	FString CharacterName;
 	
 	UPROPERTY(VisibleAnywhere,Category=PlayerInfo)
-	float TotalHp;
+	float TotalHp = 100;
 	UPROPERTY(VisibleAnywhere,Category=PlayerInfo)
-	float TotalMp;
+	float TotalMp = 100;
 	UPROPERTY(VisibleAnywhere,Category=PlayerInfo)
 	float CurrentHp;
 	UPROPERTY(VisibleAnywhere,Category=PlayerInfo)
@@ -185,6 +204,7 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	//内联函数
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE float GetCurrentHp() {return CurrentHp;}
 	void ChangeCurrentHp(float DeltaHp);
 
@@ -198,7 +218,8 @@ public:
 
 	FORCEINLINE bool GetbIsCasting(){return bIsCasting;}
 
-
+	FORCEINLINE float GetTotalHp() {return TotalHp;}
+	FORCEINLINE float GetTotalMp() {return TotalMp;}
 
 public:
 	//106
@@ -248,7 +269,7 @@ protected:
 
 
 	////////////////////////////////////////////////////////////////////////////////////////SkillTree
-protected:
+public:
 	UPROPERTY(VisibleAnywhere)
 	class USkillTreeComponent* SkillTreeComp;
 	
@@ -311,5 +332,171 @@ protected:
 	TSubclassOf<class AInventory> InventoryClass;
 
 public:
+	UPROPERTY(BlueprintReadOnly)
 	class AInventory* InventoryRef;
+
+	void ToogleShowInventory();
+
+	bool bAltDown;
+	void OnAltPressed();
+	void OnAltReleased();
+
+	/////////////////////////////////////////////////////////////////////////////////////// Equip
+	UPROPERTY(BlueprintReadWrite,Category=Weapon)
+	class AItemStaff* Staff;
+	bool EquipItem(class AItemStaff* ItemStaff);
+
+	bool EquipItem_Weapon(class AItemStaff* ItemStaff);
+	UFUNCTION(BlueprintCallable)
+	bool UnEquipItem_Weapon();
+	
+	UFUNCTION(BlueprintCallable)
+	bool UnEquipItem();
+
+	void OnOverLoaded();//超重的时候
+	void OnOverLoadEnd();//没有超重的时候
+	float DefaultSpeed;
+
+UPROPERTY(VisibleAnywhere,Category=Item)
+	class UParticleSystemComponent* OverLoadParticleComp;
+
+
+	///////////////////////////////////////////////////////////////////////////////coin
+public:
+	int CurrentCoin = 0;
+	void IncreaseCoin(int Amount);
+	void DecreaseCoin(int Amount);
+
+	/////////////////////////////////////////////////////////////////////////////////save
+
+	class URPGSave* RPDSaveInstance;
+	FString SaveSlotName = "RPGSave";
+
+	void SaveGame();
+	void LoadGame();
+
+
+	///////////////////////////////////////////////////
+	// URPGGameInstance* RPGGameInstance;
+	// void SetRPGGameInstance();
+
+protected:
+	UPROPERTY(EditAnywhere,Category=ItemInfo)
+	TArray<FKey> ItemKeys;
+
+	//////////////////////////////////////////////////////////////////////////AbilitySystem
+public:
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category=BaseCharacter)
+	class UAbilitySystemComponent* AbilitySystemComponent;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category=BaseCharacter)
+	class UBaseAttributeSet* AttributeSet;
+	
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const ;
+
+	UFUNCTION(BlueprintCallable)
+	void AquireAbility(TSubclassOf<class UBaseGameplayAbility> Ability);
+
+
+	virtual void Tick(float DeltaSeconds) override;
+
+	void ResetMove();
+
+	/**
+	 * @brief /////////////////////////////////////////////////////////////////////////dead
+	 */
+	/////////////////////////
+	void DeadCharacter();
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category=Dead)
+	bool bDead = false;
+
+	UPROPERTY(EditAnywhere,Category = "MyCharacter")
+	UAnimMontage* DeathMontage;
+
+	FTimerHandle TimerHandle_Dead;
+	FTimerHandle TimerHandle_Simlate;
+
+	void SetDeadGameMode();
+
+	class URevive* Revive;
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category=Respawn)
+	FVector RevivepointLoction;
+	FRotator RevivepointRotation;
+	
+	void ShowReviveUI();
+
+	void SetSimlate();
+
+	void Respawn();
+
+	class ABaseGameModeBase* GameMode;
+
+	UPROPERTY(EditAnywhere,Category = "MyCharacter")
+	UAnimMontage* ResPawnMontage;
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////BOW AND ARROW
+
+private:
+	ABow* Bow;
+
+	bool bAnimingMode = false;
+	bool bCharging = false;
+	bool bCanAttck = false;
+	bool bArrowSpawned = false;
+	bool bDrawLine = false;
+	bool bBowStringAttackToHand = false;
+
+	float NowVelocity;
+	FVector NowFvectorVelocity;
+
+	TArray<USplineMeshComponent*> SplineMeshs;
+
+public:
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="Arrow")
+	AArrow* Arrow;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="BowAndArrow")
+	TSubclassOf<ABow> BowClass;
+	
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="BowAndArrow")
+	TSubclassOf<AArrow> ArrowClass;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="BowAndArrow")
+	UAnimMontage* DrawArrowAnim;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="BowAndArrow")
+	USplineComponent* Spline;
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="BowAndArrow")
+	UStaticMesh* SplineStaticMesh;
+
+
+	void SpawnBow();
+
+	UFUNCTION(BlueprintCallable)
+	void Attacking();
+	UFUNCTION(BlueprintCallable)
+	void StopAttacking();
+	void LaunchArrow();
+
+	void AddChargingVelocity();
+
+	UFUNCTION(BlueprintCallable)
+	void Aiming();
+	UFUNCTION(BlueprintCallable)
+	void StopAiming();
+
+	void DrawLine();
+	void DestoryLine();
+
+	UFUNCTION(BlueprintCallable)
+	void WhenDrawArrowNotify();
+	UFUNCTION(BlueprintCallable)
+	void WhenDrawArrowEndNotify();
+	
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE bool GetBowStringIsAttachToHand() {return bBowStringAttackToHand; };
+	UFUNCTION(BlueprintCallable)
+	void WhenDrawBowStringNotify();
 };

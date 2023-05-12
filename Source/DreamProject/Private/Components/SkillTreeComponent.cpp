@@ -10,6 +10,7 @@
 #include "UserWidget/SkillTree/MainTreeWidget.h"
 #include "UserWidget/SkillTree/SkillTreeEntryWidget.h"
 #include "UserWidget/SkillTree/SubTreeWidget.h"
+#include "Character/BasePlayerController.h"
 
 // Sets default values for this component's properties
 USkillTreeComponent::USkillTreeComponent()
@@ -59,7 +60,7 @@ bool USkillTreeComponent::BCanUpgradeSpell(ABaseSkill* Spell)
 		bool LocalBool = true;
 		for(TSubclassOf<ABaseSkill> PreSkill : Spell->GetNextStage().RequireSkills)
 		{
-			if(BPlayerLearnedSpell(PreSkill))
+			if(!BPlayerLearnedSpell(PreSkill))
 			{
 				//有的技能需要很多前置技能，如果有一个没有学习，则返回假
 				LocalBool = false;
@@ -139,12 +140,19 @@ void USkillTreeComponent::HandleShowCommand()
 		{
 			MainTreeWidget->SetVisibility(ESlateVisibility::Hidden);
 			PlayerCharacter->MainUserWidget->bTreeShown = false;
+			FInputModeGameOnly InputMode;
+			PlayerCharacter->PC->bEnableClickEvents = false;
+			PlayerCharacter->PC->bShowMouseCursor = false;
+			PlayerCharacter->PC->SetInputMode(InputMode);
 		}
 		else
 		{
 			MainTreeWidget->SetVisibility(ESlateVisibility::Visible);
 			FInputModeGameAndUI InputMode;
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			PlayerCharacter->PC->SetInputMode(InputMode);
+			PlayerCharacter->PC->bEnableClickEvents = true;
+			PlayerCharacter->PC->bShowMouseCursor = true;
 			PlayerCharacter->MainUserWidget->bTreeShown = true;
 		}
 	}

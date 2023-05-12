@@ -12,6 +12,8 @@ UCLASS()
 class DREAMPROJECT_API ABaseItem : public AActor,public IInterationInterface
 {
 	GENERATED_BODY()
+	friend class AInventory;
+
 	
 public:	
 	// Sets default values for this actor's properties
@@ -22,11 +24,13 @@ public:
 
 	UPROPERTY(EditAnywhere,Category=ItemInfo)
 	int Amount;
+
+	class ARBaseCharacter* PlayerRef;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	UPROPERTY(VisibleAnywhere)
-	class USphereComponent* SphereCollisonComp;
+	class UBoxComponent* BoxCollisonComp;
 	//显示背包样式
 	UPROPERTY(VisibleAnywhere)
 	class UStaticMeshComponent* StaticMeshComp;
@@ -44,5 +48,11 @@ public:
 	virtual void OnLeavePlayerRadius(class ARBaseCharacter* Character) override;
 	virtual void OnIteractWith(class ARBaseCharacter* Character) override;
 
+	virtual void OnUsed();
+	int Index;
+	UPROPERTY(EditAnywhere,Category=ItemInfo)
+	int ID = -1;
+	class AInventory* InventoryRef;
 
+	FORCEINLINE UBoxComponent* GetBoxComponent(){return BoxCollisonComp;};
 };

@@ -75,6 +75,8 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	virtual void OnSkillNotify();
+	UFUNCTION(BlueprintCallable)
+	virtual void OnPlaySound();
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////skilltree
 	///

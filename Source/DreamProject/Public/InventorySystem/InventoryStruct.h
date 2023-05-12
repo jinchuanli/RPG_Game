@@ -7,6 +7,17 @@
 #include "UObject/NoExportTypes.h"
 #include "InventoryStruct.generated.h"
 
+//插槽结构体
+USTRUCT()
+struct FInventorySlot
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere,Category= ItemInfo)
+	TSubclassOf<class ABaseItem> ItemClass;
+	UPROPERTY(EditAnywhere,Category= ItemInfo)
+	int Amount;
+};
+
 USTRUCT()
 struct FItemInfo
 {
@@ -25,15 +36,27 @@ struct FItemInfo
 	bool bCanBeStacked;//物品是否可以堆积
 	UPROPERTY(EditAnywhere,Category= ItemInfo)
 	EItemCategories Category = EItemCategories::Consumle;
+	UPROPERTY(EditAnywhere,Category= ItemInfo)
+	FString ComparaName;
+	UPROPERTY(EditAnywhere,Category= ItemInfo)
+	float Weight;
+
+	//合成的物品所需要的信息（物品及数量）
+	UPROPERTY(EditAnywhere,Category= ItemInfo)
+	TArray<FInventorySlot> Recipe;
+
+	UPROPERTY(EditAnywhere,Category= ItemInfo)
+	float Price;
 };
 
-//插槽结构体
 USTRUCT()
-struct FInventorySlot
+struct FSavedPickup
 {
 	GENERATED_BODY()
-	TSubclassOf<class ABaseItem> ItemClass;
-	int Amount;
+	UPROPERTY()
+	int ID;//场景中所有需要保存的物体的ID，同一个类不同物品ID不同，如果该物体不需要保存ID = -1；重新开始游戏不会生成
+	UPROPERTY()
+	int RestAmount;
 };
 
 /**

@@ -2,7 +2,7 @@
 
 
 #include "Enemy/NormalEnemy.h"
-
+#include "InventorySystem/BaseItem.h"
 #include "Character/RBaseCharacter.h"
 #include "Character/Skill/BaseElement.h"
 #include "Enemy/NormalEnemyController.h"
@@ -25,6 +25,10 @@
 #include "Components/Border.h"
 #include "UserWidget/MainUserWidget.h"
 #include "Components/ArrowComponent.h"
+#include "Components/SkillTreeComponent.h"
+#include "GeometryCollection/PhysicsAssetSimulation.h"
+#include "../Plugins/SimpleDrawText/Source/SimpleDrawText/Public/SimpleDrawTextFunctionLibrary.h"
+#include "InventorySystem/Inventory.h"
 #include "Quest/QuestManager.h"
 
 #define LOCTEXT_NAMESPACE "EnemyNameSpace"
@@ -79,6 +83,8 @@ ANormalEnemy::ANormalEnemy()
 
 	HitArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("HitArrow"));
 	HitArrow->SetupAttachment(RootComponent);
+
+
 }
 
 // Called when the game starts or when spawned
@@ -97,13 +103,19 @@ void ANormalEnemy::BeginPlay()
 	InitWidgetText();
 	CurrentHealth = TotalHealth;
 	UpdateHealthBar();
+	
+	AController* EnemyController = Cast<AController>(GetOwner());
+	if (EnemyController)
+	{
+		APawn* EnemyPawn = EnemyController->GetPawn();
+		EnemyCharacter = Cast<ANormalEnemy>(EnemyPawn);
+	}
 }
 
 // Called every frame
 void ANormalEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 // Called to bind functionality to input
@@ -122,50 +134,108 @@ void ANormalEnemy::OnSightPerceptionUpdated(const TArray<AActor*>& UpdatedActors
 	}
 }
 
-void ANormalEnemy::NotifyHit_M()
+void ANormalEnemy::NotifyHit_Spider()
 {
 	AttackRay();
+
+	UE_LOG(LogTemp, Warning, TEXT("执行了吗"));
 }
 
 void ANormalEnemy::AttackRay()
 {
-	int Range = 250;
-	FVector MyStartLocation = GetActorLocation();
-	FVector EndLocation = MyStartLocation+GetCapsuleComponent()->GetForwardVector()*Range;
-
-	FHitResult HitResult;
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(this);
-	if(GetWorld()->LineTraceSingleByChannel(HitResult,StartLocation,EndLocation,EnemyHitChannel,QueryParams))
+	if(EnemyCharacter)
 	{
-		ARBaseCharacter *Character = Cast<ARBaseCharacter>(HitResult.GetActor());
-		if(Character)
+		USkeletalMeshComponent* SkeletalMeshComponent = EnemyCharacter->GetMesh();
+		FVector RStartLocation = SkeletalMeshComponent->GetSocketLocation("R_Start");
+		FVector REndLocation = SkeletalMeshComponent->GetSocketLocation("R_End");
+		FCollisionQueryParams TraceParams(FName(TEXT("BoxTrace")), true, GetOwner());
+		FVector BoxExtent(5, 5, 5);
+		FHitResult HitResult;
+		bool bHit = GetWorld()->SweepSingleByChannel(
+			HitResult,
+			RStartLocation,
+			REndLocation,
+			FQuat::Identity,
+			EnemyHitChannel,
+			FCollisionShape::MakeBox(BoxExtent),
+			TraceParams
+		);
+		if(bHit)
 		{
-			IDamageAbleInterface* DamageAbleInterface = Cast<IDamageAbleInterface>(Character);
-			if(DamageAbleInterface)
+			ARBaseCharacter *Character = Cast<ARBaseCharacter>(HitResult.GetActor());
+			if(Character)
 			{
-				DamageAbleInterface->OnReceiveDamage(BaseDamage,DamageType,Element,CritChance,this,nullptr);
+				IDamageAbleInterface* DamageAbleInterface = Cast<IDamageAbleInterface>(Character);
+				{
+					if(DamageAbleInterface)
+					{
+						if(IsHit == 0)
+						{
+							DamageAbleInterface->OnReceiveDamage(BaseDamage,DamageType,Element,CritChance,this,nullptr);
+							IsHit++;
+							//UE_LOG(LogTemp, Warning, TEXT("Right Spider make damage"));
+						}
+					}
+				}
 			}
 		}
+	}
+
+}
+
+void ANormalEnemy::LAttackRay()
+{
+	if(EnemyCharacter)
+	{
+		USkeletalMeshComponent* SkeletalMeshComponent = EnemyCharacter->GetMesh();
+		FVector LStartLocation = SkeletalMeshComponent->GetSocketLocation("L_Start");
+		FVector LEndLocation = SkeletalMeshComponent->GetSocketLocation("L_End");
+		FCollisionQueryParams TraceParams(FName(TEXT("BoxTrace")), true, GetOwner());
+		FVector BoxExtent(5, 5, 5);
+		//DrawDebugBox(GetWorld(),LStartLocation,BoxExtent,FColor::Red,false,5.f,0,1.f);
+		FHitResult HitResult;
+		bool bHit = GetWorld()->SweepSingleByChannel(
+			HitResult,
+			LStartLocation,
+			LEndLocation,
+			FQuat::Identity,
+			EnemyHitChannel,
+			FCollisionShape::MakeBox(BoxExtent),
+			TraceParams
+		);
+		if(bHit)
+		{
+			ARBaseCharacter *Character = Cast<ARBaseCharacter>(HitResult.GetActor());
+			if(Character)
+			{
+				IDamageAbleInterface* DamageAbleInterface = Cast<IDamageAbleInterface>(Character);
+				{
+					if(DamageAbleInterface)
+					{
+						if(IsHit == 0)
+						{
+							DamageAbleInterface->OnReceiveDamage(BaseDamage,DamageType,Element,CritChance,this,nullptr);
+							IsHit++;
+							//UE_LOG(LogTemp, Warning, TEXT("Left Spider make damage"));
+						}
+					}
+				}
+			}
+		}
+
 	}
 }
 
 void ANormalEnemy::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
-	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+                                  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	//UE_LOG(LogTemp,Warning,TEXT("执行显示血条"));
 	if(!bDead)
 	{
 		if(Cast<ARBaseCharacter>(OtherActor) && !EnemyWidgetComp->IsVisible())
 		{
 			bInShowRange = true;
 			EnemyWidgetComp->SetVisibility(true);
-			//UE_LOG(LogTemp,Warning,TEXT("显示血条"));
 		}
-		// else
-		// {
-		// 	UE_LOG(LogTemp,Warning,TEXT("显示血条出错"));
-		// }
 	}
 }
 
@@ -208,17 +278,21 @@ void ANormalEnemy::UpdateHealthBar()
 	}
 }
 
+//接受伤害
 void ANormalEnemy::OnReceiveDamage(float FBaseDamage, EDamageType Type, TSubclassOf<ABaseElement> FElement,
 	int FCritChance, AActor* Attacker, ABaseSkill* Spell)
 {
 	if(!bDead && !UStaticLibrary::bIsEnemy(Attacker))
 	{
+		int32 Damage = UStaticLibrary::CaculateFinalDamage(FBaseDamage,FCritChance,FElement,this->Element);
 		CurrentHealth = FMath::Clamp((CurrentHealth - UStaticLibrary::CaculateFinalDamage(FBaseDamage,FCritChance,FElement,this->Element)),0.f,TotalHealth);
+		//deawText
+		USimpleDrawTextFunctionLibrary::SpawnDrawText(this,GetActorLocation(),FString::FromInt(Damage),FColor::Red,0,EInfoAnimType::TYPE_DEFAULT);
+		
 		UpdateHealthBar();
 		if(CurrentHealth <= 0.5)
 		{
 			OnDeath(Attacker);
-			
 		}
 		else
 		{
@@ -232,6 +306,8 @@ void ANormalEnemy::OnDeath(AActor* Killer)
 {
 	MyController->AnimInstance->Montage_Stop(0.f);
 	bDead = true;
+	if(bDead)
+		SpawnItem(ArrayOfActor);
 	//一般需要一个物体停止移动都需要这两句话
 	GetCharacterMovement()->DisableMovement();
 	GetCharacterMovement()->StopMovementImmediately();
@@ -239,18 +315,34 @@ void ANormalEnemy::OnDeath(AActor* Killer)
 	EnemyWidgetComp->SetVisibility(false);
 	
 	//判断主角获得经验
-	ARBaseCharacter* TempCharacter = Cast<ARBaseCharacter>(Killer);
-	if(TempCharacter)
+	 //ARBaseCharacter* TempCharacter = Cast<ARBaseCharacter>(Killer);
+	 //UE_LOG(LogTemp, Warning, TEXT("%s"),*abc->GetClass()->GetName());
+
+	///////////////////////////////////////
+	///武器杀死敌人
+	ARBaseCharacter* TempCharacter;
+	ABaseItem* Weapon = Cast<ABaseItem>(Killer);
+	if(Weapon)
 	{
-		TempCharacter->IncreaseCurrentExp(ExpForKill);
-		if(TempCharacter->SelectedEnemy == this)
-		{
-			TempCharacter->SelectedEnemy = nullptr;
-			TempCharacter->MainUserWidget->EnemyBorder->SetVisibility(ESlateVisibility::Hidden);
-			
-		}
-		TempCharacter->QuestManager->OnEnemyKilled(this->GetClass());
+		TempCharacter = Weapon->PlayerRef;
 	}
+	else
+	{
+		//技能杀死敌人
+		TempCharacter = Cast<ARBaseCharacter>(Killer);
+	}
+	 if(TempCharacter)
+	 {
+	 	//UE_LOG(LogTemp, Warning, TEXT("主角获得经验"));
+	 	TempCharacter->IncreaseCurrentExp(ExpForKill);
+	 	if(TempCharacter->SelectedEnemy == this)
+	 	{
+	 		TempCharacter->SelectedEnemy = nullptr;
+	 		TempCharacter->MainUserWidget->EnemyBorder->SetVisibility(ESlateVisibility::Hidden);
+	 		
+	 	}
+	 	TempCharacter->QuestManager->OnEnemyKilled(this->GetClass());
+	 }
 
 	
 	//禁用碰撞
@@ -274,7 +366,7 @@ void ANormalEnemy::Respawn()
 	GetCharacterMovement()->MaxWalkSpeed = MyController->PatrolWalkSpeed;
 	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 	EnemyWidgetComp->SetVisibility(bInShowRange);
-	SetActorHiddenInGame(true);
+	SetActorHiddenInGame(false);
 	MyController->Patrol();
 }
 
@@ -314,6 +406,40 @@ void ANormalEnemy::OnDelayDeath()
 		GetWorldTimerManager().SetTimer(TimerHandle_Respawn,this,&ANormalEnemy::Respawn,RespawnTime,false);
 	else
 		Destroy();
+}
+
+void ANormalEnemy::SpawnItem(TArray<TSubclassOf<AActor>> Item)
+{
+	for(TSubclassOf<AActor> Temp : Item)
+	{
+		if(Temp)
+		{
+			FActorSpawnParameters Params;
+			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			AActor* aa = GetWorld()->SpawnActor<AActor>(Temp,GetActorLocation()+FVector(0.f,0.f,20.f),FRotator::ZeroRotator,Params);
+			UStaticMeshComponent* StaticMeshComp = aa->FindComponentByClass<UStaticMeshComponent>();
+			StaticMeshComp->SetSimulatePhysics(true);
+			//GetWorldTimerManager().SetTimer(TimerHandle_Destroy,[this,aa](){SpawnItemDestory(aa);},10.f,true);
+			SpawnActor.Add(aa);
+			//RunItemDestroy(aa);
+			//UE_LOG(LogTemp, Warning, TEXT("启动自动销毁"));
+		}
+	}
+	if(!SpawnActor.IsEmpty())
+	{
+		GetWorldTimerManager().SetTimer(TimerHandle_Destroy,this,&ANormalEnemy::SpawnItemDestory,10.f,false);
+	}
+}
+
+void ANormalEnemy::SpawnItemDestory()
+{
+	for(AActor* Temp : SpawnActor)
+	{
+		Temp->Destroy();
+	}
+	SpawnActor.Empty();
+	GetWorldTimerManager().ClearTimer(TimerHandle_Destroy);
+	//UE_LOG(LogTemp, Warning, TEXT("生成物体自动销毁"));
 }
 
 #undef LOCTEXT_NAMESPACE

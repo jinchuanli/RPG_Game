@@ -57,8 +57,13 @@ void AMagicProjectile::OnOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 		IDamageAbleInterface* DamageAbleInterface = Cast<IDamageAbleInterface>(TempEnemy);
 		if(DamageAbleInterface)
 		{
-			DamageAbleInterface->OnReceiveDamage(Skill->GetCurrentStage().Damage,Skill->GetCurrentStage().DamageType,
-				Skill->GetSkillInfo().Element,Skill->GetCurrentStage().CriticalChance,Skill->GetPlayerReference(),Skill);
+			DamageAbleInterface->OnReceiveDamage(
+				Skill->GetCurrentStage().Damage,
+				Skill->GetCurrentStage().DamageType,
+				Skill->GetSkillInfo().Element,
+				Skill->GetCurrentStage().CriticalChance,
+				Skill->GetPlayerReference(),
+				Skill);
 		}
 		Destroy();
 	}

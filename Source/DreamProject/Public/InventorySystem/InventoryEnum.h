@@ -11,10 +11,19 @@ enum class EItemCategories
 {
 	Consumle,//消耗品
 	Equipment,//装备
+	Bow,
 	QuestItem,//任务书
-	ReadAble//可以阅读
+	ReadAble,//可以阅读
+	Material
 };
 
+UENUM()
+enum class ESortType
+{
+	Category,
+	Amount,
+	Name,
+};
 /**
  * 
  */

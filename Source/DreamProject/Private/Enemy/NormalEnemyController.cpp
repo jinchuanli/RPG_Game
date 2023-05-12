@@ -2,7 +2,7 @@
 
 
 #include "Enemy/NormalEnemyController.h"
-#include "H:\DreamProject\Source\DreamProject\Public\Enemy\NormalEnemy.h"
+#include "Enemy\NormalEnemy.h"
 #include "NavigationSystem.h"
 #include "TimerManager.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -10,6 +10,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
+#include "Character/RBaseCharacter.h"
 
 ANormalEnemyController::ANormalEnemyController()
 {
@@ -36,6 +37,10 @@ void ANormalEnemyController::Patrol()
 		{
 			MoveToLocation(RandomPt.Location);
 		}
+	}
+	else
+	{
+		NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(this);
 	}
 }
 
@@ -102,10 +107,27 @@ void ANormalEnemyController::PerFromAttack()
 			FRotator Rotation = UKismetMathLibrary::FindLookAtRotation(EnemyPawn->GetActorLocation(),TargetActor->GetActorLocation());
 			EnemyPawn->SetActorRotation(Rotation);
 		}
-		//播放攻击动画
-		CurrentAttackMontage = EnemyPawn->AttackAnimations[CurrentAttackIndex];
-		AnimInstance->Montage_Play(CurrentAttackMontage);
-		GetWorldTimerManager().SetTimer(TimerHandle_OnAnimPlayOver,this,&ANormalEnemyController::OnAnimPlayOver,CurrentAttackMontage->SequenceLength,false);
+		ARBaseCharacter* TargetRef = Cast<ARBaseCharacter>(TargetActor);
+		if(TargetRef)
+		{
+			if(TargetRef->bDead != true)
+			//播放攻击动画
+			{
+			CurrentAttackMontage = EnemyPawn->AttackAnimations[CurrentAttackIndex];
+			AnimInstance->Montage_Play(CurrentAttackMontage);
+			GetWorldTimerManager().SetTimer(TimerHandle_OnAnimPlayOver,this,&ANormalEnemyController::OnAnimPlayOver,CurrentAttackMontage->GetPlayLength(),false);
+			//UE_LOG(LogTemp, Warning, TEXT("TargetRef not dead"));
+			}
+			else
+			{
+				OnReset();
+				//UE_LOG(LogTemp, Warning, TEXT("TargetRef is dead"));
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("TargetRef not exist"));
+		}
 	}
 }
 
@@ -115,6 +137,7 @@ void ANormalEnemyController::OnAnimPlayOver()
 	CurrentAttackIndex = GetNextAnimtionIndex();
 	if(bInAttackRange())
 	{
+		EnemyPawn->IsHit = 0;
 		PerFromAttack();
 	}
 	else

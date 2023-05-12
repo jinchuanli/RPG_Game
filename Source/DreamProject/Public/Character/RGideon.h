@@ -15,4 +15,5 @@ class DREAMPROJECT_API ARGideon : public ARBaseCharacter
 	GENERATED_BODY()
 	
 	ARGideon();
+	
 };

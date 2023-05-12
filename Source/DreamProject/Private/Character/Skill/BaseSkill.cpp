@@ -36,6 +36,7 @@ void ABaseSkill::InitializeSpellCast()
 	{
 		bCurrentCasting = true;
 		PlayerReference->BeginSpellCast(this);
+		UE_LOG(LogTemp, Warning, TEXT("魔法的消耗 %f"),GetCurrentStage().ManaCost*-1);
 		PlayerReference->ChangeCurrentMp(GetCurrentStage().ManaCost*-1);
 		OnSpellCast();
 	}
@@ -49,12 +50,6 @@ void ABaseSkill::InitializeSpellCast()
 
 void ABaseSkill::OnSpellCast()
 {
-	//UE_LOG(LogTemp,Warning,TEXT("Casting skill: %s"),*SkillInfo.Name.ToString());
-	//
-	// FString a = *SkillInfo.Name.ToString();
-	// FString b = "Casting skill ";
-	// GEngine->AddOnScreenDebugMessage(-1,3.0f,FColor::Red,b+a);
-
 	if(SkillAnimMontage)
 	{
 		PlaySkillAnimation(SkillAnimMontage);
@@ -140,7 +135,7 @@ void ABaseSkill::PlaySkillAnimation(UAnimMontage* SkillAnimtion)
 	PlayerReference->GetCharacterMovement()->StopMovementImmediately();
 
 	AnimInstance->Montage_Play(SkillAnimtion);
-	GetWorldTimerManager().SetTimer(TimerHandle_ResetMove,this,&ABaseSkill::RestMovement,SkillAnimtion->SequenceLength,false);
+	GetWorldTimerManager().SetTimer(TimerHandle_ResetMove,this,&ABaseSkill::RestMovement,SkillAnimtion->GetPlayLength(),false);
 }
 
 void ABaseSkill::RestMovement()
@@ -151,5 +146,10 @@ void ABaseSkill::RestMovement()
 void ABaseSkill::OnSkillNotify()
 {
 	GEngine->AddOnScreenDebugMessage(-1,3.f,FColor::Red,"OnSkillNotify");
+}
+
+void ABaseSkill::OnPlaySound()
+{
+	GEngine->AddOnScreenDebugMessage(-1,3.f,FColor::Green,"OnPlaySound");
 }
 

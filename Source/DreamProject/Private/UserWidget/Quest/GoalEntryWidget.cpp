@@ -16,7 +16,7 @@ void UGoalEntryWidget::Update()
 	if(GoalInfo.bCustomGoal)
 	{
 		SetGoalText(GoalInfo.GoalText);
-		UE_LOG(LogTemp,Warning,TEXT("更新文字"));
+		//UE_LOG(LogTemp,Warning,TEXT("更新文字"));
 	}
 	else
 	{

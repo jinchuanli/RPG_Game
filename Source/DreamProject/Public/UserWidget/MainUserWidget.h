@@ -5,11 +5,14 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "SkillHotKey.h"
+#include "InventorySystem/BaseItem.h"
 #include "MainUserWidget.generated.h"
 
 class UTextBlock;
 class UProgressBar;
 class UButton;
+class USkillTreeComponent;
+class ARBaseCharacter;
 /**
  * 
  */
@@ -28,8 +31,12 @@ class DREAMPROJECT_API UMainUserWidget : public UUserWidget
 	//
 	TArray<class UHotKeyRow*> HotKeyRows;
 	//
+
 	
 public:
+	//ARBaseCharacter* Playref;
+	USkillTreeComponent* SkillTreeComponent;
+	
 	UPROPERTY(BlueprintReadOnly)
 	TArray<FKey> Keys;
 	UPROPERTY(BlueprintReadOnly)
@@ -51,7 +58,7 @@ public:
 	void PlayPopUpAnimation_Implementation();   //NativeEvent在南图中没有写实现的话，自动调用c++中的函数
 
 	//
-  //技能丢弃，实际上是丢到主界面上面
+  //技能丢弃，实际上是丢到主界面上面,主界面的丢弃函数
 	virtual bool NativeOnDrop( const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation )override;
 
 
@@ -117,6 +124,8 @@ public:
 	UPROPERTY(Meta = (BindWidget))
 	UButton* Button_Skill;
 
+
+
 	UFUNCTION()
 	void OnQuestButtonClicked();
 
@@ -129,7 +138,64 @@ public:
 
 
 	////////////////////////////////////////////////////////////////////////////////////inventory
+protected:
+	UPROPERTY(Meta = (BindWidget))
+	UButton* Button_Inventory;
 public:
+	bool bInventoryVisibling = false;
+	
 	UPROPERTY(meta=(BindWidget))
 	class UInventoryWidget* InventoryWidget;
+
+	UFUNCTION()
+	void OnInventoryButtonClicked();
+
+	UPROPERTY(meta=(BindWidget))
+	class UThrowWidget* ThrowWidget;
+
+	UPROPERTY(meta=(BindWidget))
+	class UBorder* ObtainContainer;
+	UPROPERTY(meta=(BindWidget))
+	UBorder* ReadableContainer;
+	
+
+	//用队列实现一次性界面上只出现一个播放动画
+	TQueue<FInventorySlot> ObtainedItemQueue;
+	void AddItemToObtainedQueue(TSubclassOf<class ABaseItem> ItemClass,int Amount);
+	UFUNCTION(BlueprintCallable)
+	void OnObtainMessageEnd();
+
+	UPROPERTY(BlueprintReadOnly,meta=(BindWidget))
+	class UCraftingMenuWidget* CraftingMenu;
+	
+	class UShopWidget* ShopWidget;
+
+
+	////////////////////////////////////////////////////////save
+	UPROPERTY(meta=(BindWidget))
+	UButton* Button_Setting;
+	
+	UPROPERTY(meta=(BindWidget))
+	class USettingWidget* SettingWidget;
+
+	bool bSettingVisibling = false;
+	UFUNCTION()
+	void OnSettingButtonClicked();
+
+	/////////////////////////////////////////////////////////////////////////storage
+	UPROPERTY(meta=(BindWidget))
+	class UStorageWidget* StorageWidget;
+	
+	////////////////////////////////////////////////////////////////////////////////
+	class AInventory* Inventory;
+	
+	UPROPERTY(meta=(BindWidget))
+	class UHorizontalBox* ItemHotKeyBar;
+
+	TArray<class UItemHotKey*> ItemHotKeyWidgets;
+	
+	void GenerateItemHotKeys(TArray<FKey> ItemKeysToGenerate);
+
+	UFUNCTION()
+	void SkillTreeShow();
 };

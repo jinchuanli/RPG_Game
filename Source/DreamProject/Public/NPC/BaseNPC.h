@@ -15,8 +15,7 @@ class DREAMPROJECT_API ABaseNPC : public ACharacter,public IInterationInterface
 public:
 	// Sets default values for this character's properties
 	ABaseNPC();
-
-protected:
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 

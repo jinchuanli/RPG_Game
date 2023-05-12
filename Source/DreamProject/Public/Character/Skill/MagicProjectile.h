@@ -28,11 +28,11 @@ protected:
 	class UProjectileMovementComponent* ProjectileMovementComponent;//控制移动的组件
 
 	//持有的特效
-	UPROPERTY(VisibleAnywhere,Category=Effect)
+	UPROPERTY(EditAnywhere,Category=Effect)
 	UParticleSystem* MissileEffect; // 导弹的特效
-	UPROPERTY(VisibleAnywhere,Category=Effect)
+	UPROPERTY(EditAnywhere,Category=Effect)
 	UParticleSystem* ImpactEffect;//爆炸的特效
-
+	
 	//
 	class AMissileSkill* Skill;
 
@@ -40,7 +40,7 @@ protected:
 	UFUNCTION()
 	void OnOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
 	
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

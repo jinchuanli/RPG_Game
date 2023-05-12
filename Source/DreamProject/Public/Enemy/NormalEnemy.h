@@ -19,6 +19,7 @@ public:
 	// Sets default values for this character's properties
 	ANormalEnemy();
 
+	ANormalEnemy* EnemyCharacter;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -68,17 +69,22 @@ protected:
 	TSubclassOf<ABaseElement> Element;
 
 	//111
-	UFUNCTION(BlueprintCallable)
-	void NotifyHit_M();
+	UFUNCTION(BlueprintCallable,Category=Spider)
+	void NotifyHit_Spider();
 
+	UPROPERTY(EditAnywhere,Category=Info)
 	float BaseDamage = 25.f; //基础伤害
+	UPROPERTY(EditAnywhere,Category=Info)
 	EDamageType DamageType = EDamageType::Physical;//物理伤害
 
 	int CritChance = 25;//暴击率
 
 	//112
 	//射线检测
+	UFUNCTION(BlueprintCallable,Category=Spider)
 	void AttackRay();
+	UFUNCTION(BlueprintCallable,Category=Spider)
+	void LAttackRay();
 
 	//115
 	UPROPERTY(VisibleAnywhere,Category=UI)  //暴露组件的细节
@@ -87,6 +93,7 @@ protected:
 	//116
 	UPROPERTY(VisibleAnywhere,Category=UI)
 	class USphereComponent* ShowUICollision;
+	
 	//117
 	//当主角与球形碰撞体发生碰撞的时候，显示血条信息
 	UFUNCTION()  //.AddDynamic动态绑定必须添加UFUNCTION()
@@ -114,7 +121,7 @@ public:
 
 protected:
 	//120
-	virtual void OnReceiveDamage(float FBaseDamage,EDamageType Type,TSubclassOf<ABaseElement> FElement,int FCritChance,AActor* Attacker,ABaseSkill* Spell);
+	virtual void OnReceiveDamage(float FBaseDamage,EDamageType Type,TSubclassOf<ABaseElement> FElement,int FCritChance,AActor* Attacker,ABaseSkill* Spell) override;
 
 	//121
 	void OnDeath(AActor* Killer);
@@ -142,4 +149,14 @@ protected:
 public:
 	UPROPERTY(VisibleAnywhere,Category=Hit)
 	class UArrowComponent* HitArrow;
+
+	UPROPERTY(EditAnywhere,Category=Item)
+	TArray<TSubclassOf<AActor>> ArrayOfActor;
+
+	FTimerHandle TimerHandle_Destroy;
+	void SpawnItem(TArray<TSubclassOf<AActor>> Item);
+	void SpawnItemDestory();
+	TArray<AActor*> SpawnActor;
+	
+	int32 IsHit = 0;
 };

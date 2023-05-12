@@ -25,7 +25,8 @@ class DREAMPROJECT_API ANormalEnemyController : public AAIController
 public:
 	bool bIsPatrolling = true;
 	void Patrol();
-
+	
+	//class ARBaseCharacter* PlayerRef;
 	//
 private:
 	virtual void OnMoveCompleted(FAIRequestID RequestID, const FPathFollowingResult& Result)override;
@@ -34,7 +35,7 @@ private:
 	public:
 	//95
 	float PatrolWalkSpeed = 200.f; //巡逻的时候移动速度
-	float AggoredWalkSpeed = 600.f; //追逐的时候的移动速度
+	float AggoredWalkSpeed = 500.f; //追逐的时候的移动速度
 
 	AActor* TargetActor;//要攻击或追逐的对象
 	bool bIsRunningBack = true; //判断状态是否是追逐目标但目标脱离了的状态

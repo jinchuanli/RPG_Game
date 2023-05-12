@@ -17,7 +17,11 @@ public class DreamProject : ModuleRules
 			"UMG",
 			"NavigationSystem",
 			"Paper2D",
-			"SimpleThread",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks",
+			"SimpleDrawText",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

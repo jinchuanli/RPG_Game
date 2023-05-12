@@ -27,7 +27,7 @@ public:
 		const UEnum* EnumPtr = FindObject<UEnum>(ANY_PACKAGE,*Name,true);
 		if(!EnumPtr)
 		{
-			return FString("InValid");
+			return FString("InValid"); 
 		}
 		else
 		{
@@ -36,4 +36,22 @@ public:
 			return TempString;
 		}
 	};
+
+	template<typename TEnum>
+	static FORCEINLINE TArray<TEnum> EnumGetList(const FString& Name);  //想要类进行调用前面必须添加static
 };
+
+template <typename TEnum>
+TArray<TEnum> UStaticLibrary::EnumGetList(const FString& Name)
+{
+	TArray<TEnum> Result;
+	UEnum* pEnum = FindObject<UEnum>(ANY_PACKAGE,*Name,true);
+	for(int i = 0; i < pEnum->GetMaxEnumValue();i++)
+	{
+		if(pEnum->IsValidEnumValue(i))
+		{
+			Result.Add(static_cast<TEnum>(i));
+		}
+	}
+	return Result;
+}

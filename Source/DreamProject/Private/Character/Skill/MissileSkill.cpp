@@ -49,8 +49,11 @@ void AMissileSkill::OnSkillNotify()
 	FActorSpawnParameters Params;
 	Params.Owner = this;
 	//技能的发射位置和旋转
-	GetWorld()->SpawnActor<AMagicProjectile>(MagicProjectile,PlayerReference->GetMesh()->GetSocketLocation("Muzzle_01"),
-		PlayerReference->GetMesh()->GetSocketRotation("Muzzle_01"),Params);
+	GetWorld()->SpawnActor<AMagicProjectile>(
+		MagicProjectile,
+		PlayerReference->GetMesh()->GetSocketLocation("Muzzle_01"),
+		PlayerReference->GetMesh()->GetSocketRotation("Muzzle_01"),
+		Params);
 }
 
 void AMissileSkill::CaculateDistanceToEnemy()

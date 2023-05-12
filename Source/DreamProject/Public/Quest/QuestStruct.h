@@ -62,10 +62,10 @@ struct FGoalInfo//子任务信息
 	TSubclassOf<AActor> GoalClass;//作用的目标
 	UPROPERTY(EditAnywhere,Category=QuestInfo)
 	int GoalId;
-
+	UPROPERTY(EditAnywhere,Category=QuestInfo)
 	bool bFailMeansQuestFail;
 
-	bool operator==(const FGoalInfo& GoalInfo)
+	bool operator == (const FGoalInfo& GoalInfo)
 	{
 		return (GoalInfo.Type == this->Type &&
 			GoalInfo.bCustomGoal == this->bCustomGoal &&

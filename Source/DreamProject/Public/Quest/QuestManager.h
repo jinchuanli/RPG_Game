@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "QuestStruct.h"
+#include "NPC/BaseNPC.h"
+#include "Quest/Props/BaseQuestProp.h"
+#include "Enemy/NormalEnemy.h"
 #include "GameFramework/Actor.h"
 #include "QuestManager.generated.h"
 
@@ -56,7 +59,7 @@ public:
 	void OnEnemyKilled(TSubclassOf<class ANormalEnemy> Enemy);
 
 	//寻找物品的任务
-	void OnObjectFound(TSubclassOf<class ABaseQuestProp> Prop);\
+	void OnObjectFound(TSubclassOf<class ABaseQuestProp> Prop);
 
 	//与NPC谈话
 	void OnTalkToNPC(TSubclassOf<class ABaseNPC>NPC,int NPCId);

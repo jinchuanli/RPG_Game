@@ -5,9 +5,9 @@
 #include "Character/Skill/BaseElement.h"
 #include "Enemy/NormalEnemy.h"
 #include "Character/Skill/SkillEnum.h"
+#include "Enemy/Boss.h"
 
-float UStaticLibrary::CaculateFinalDamage(float BaseDamage, int CritChance, TSubclassOf<ABaseElement> AttackerElement,
-                                          TSubclassOf<ABaseElement> DefenderElement)
+float UStaticLibrary::CaculateFinalDamage(float BaseDamage, int CritChance, TSubclassOf<ABaseElement> AttackerElement,TSubclassOf<ABaseElement> DefenderElement)
 {
 	float CurrentDamage = BaseDamage*FMath::RandRange(0.9f,1.1f);
 	EEffectiveness LocalEffectiveness;
@@ -60,6 +60,9 @@ float UStaticLibrary::CaculateFinalDamage(float BaseDamage, int CritChance, TSub
 
 bool UStaticLibrary::bIsEnemy(AActor* Actor)
 {
-	return (Actor->GetClass() == ANormalEnemy::StaticClass() || Actor->GetClass()->IsChildOf(ANormalEnemy::StaticClass()));
+	return (Actor->GetClass() == ANormalEnemy::StaticClass()
+		|| Actor->GetClass()->IsChildOf(ANormalEnemy::StaticClass())
+		|| Actor->GetClass() == ABoss::StaticClass()
+		|| Actor->GetClass()->IsChildOf(ABoss::StaticClass()));
 }
 

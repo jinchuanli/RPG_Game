@@ -2,6 +2,9 @@
 
 
 #include "UserWidget/MainUserWidget.h"
+
+#include "Character/RBaseCharacter.h"
+#include "Components/Border.h"
 #include "Components/TextBlock.h"
 #include "Components/ProgressBar.h"
 #include "Components/ScrollBox.h"
@@ -9,9 +12,21 @@
 #include "Components/VerticalBox.h"
 #include "UserWidget/HotKeyRow.h"
 #include "Components/Button.h"
+#include "Components/HorizontalBox.h"
+#include "Components/WrapBox.h"
+#include "InventorySystem/Inventory.h"
+#include "UserWidget/SettingWidget.h"
 #include "UserWidget/SkillDragOperation.h"
+#include "UserWidget/Inventory/InventoryDragDropOperation.h"
+#include "UserWidget/Inventory/InventorySlotWidget.h"
+#include "UserWidget/Inventory/InventoryWidget.h"
+#include "UserWidget/Inventory/ItemDragDropOperation.h"
+#include "UserWidget/Inventory/ItemHotKey.h"
+#include "UserWidget/Inventory/ItemObtainWidget.h"
+#include "UserWidget/Inventory/ThrowWidget.h"
 #include "UserWidget/Quest/QuestJournal.h"
 #include "UserWidget/Quest/QuestWidget.h"
+#include "Components/SkillTreeComponent.h"
 #include "UserWidget/SkillTree/MainTreeWidget.h"
 
 //初始化注册
@@ -21,12 +36,15 @@ bool UMainUserWidget::Initialize()
 	{
 		return false;
 	}
+	
 	LevelText = Cast<UTextBlock>(GetWidgetFromName("Text_level"));
 	HPPProgressBar = Cast<UProgressBar>(GetWidgetFromName("ProgressBar_HP"));
 	MPPProgressBar = Cast<UProgressBar>(GetWidgetFromName("ProgressBar_MP"));
 
 	Button_Quest->OnClicked.AddDynamic(this,&UMainUserWidget::OnQuestButtonClicked);
-	Button_Skill->OnClicked.AddDynamic(this,&UMainUserWidget::OnSkillButtonClicked);
+	Button_Skill->OnClicked.AddDynamic(this,&UMainUserWidget::SkillTreeShow);
+	Button_Inventory->OnClicked.AddDynamic(this,&UMainUserWidget::OnInventoryButtonClicked);
+	Button_Setting->OnClicked.AddDynamic(this,&UMainUserWidget::OnSettingButtonClicked);
 	return true;
 }
 
@@ -97,12 +115,37 @@ bool UMainUserWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropE
 {
 	Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 	
-	if(Cast<USkillDragOperation>(InOperation))
+	if(Cast<USkillDragOperation>(InOperation))  //技能丢弃到主界面上
 	{
 		if(Cast<USkillDragOperation>(InOperation)->FromHotKey)
 			if(Cast<USkillDragOperation>(InOperation)->FromHotKey)
 				Cast<USkillDragOperation>(InOperation)->FromHotKey->ClearAssignedSpell();
 		UE_LOG(LogTemp,Warning,TEXT("调用丢到主界面"));
+		return true;
+	}
+	else if (Cast<UInventoryDragDropOperation>(InOperation))  //背包的拖拽
+	{
+		UE_LOG(LogTemp,Warning,TEXT("拖拽任务窗口执行"));
+		Cast<UInventoryDragDropOperation>(InOperation)->WidgetToDrag->AddToViewport();
+		Cast<UInventoryDragDropOperation>(InOperation)->WidgetToDrag->SetDesiredSizeInViewport(FVector2D(800,600));
+
+		Cast<UInventoryDragDropOperation>(InOperation)->WidgetToDrag->SetPositionInViewport(InGeometry.AbsoluteToLocal(InDragDropEvent.GetScreenSpacePosition())
+			- Cast<UInventoryDragDropOperation>(InOperation)->MouseOffest,false);
+		return true;
+	}
+	else if (Cast<UItemDragDropOperation>(InOperation))   //物品Slo槽的拖拽
+	{
+		UInventorySlotWidget* FSlot = Cast<UItemDragDropOperation>(InOperation)->DraggedSlot;
+		if(!FSlot->ItemInfo.bCanBeStacked && FSlot->Amount > 0)
+		{
+			InventoryWidget->InventoryRef->RemoveItemAtIndex(FSlot->SlotIndex,1);
+		}
+		else
+		{
+			ThrowWidget->Update(FSlot->SlotIndex);
+			ThrowWidget->SetVisibility(ESlateVisibility::Visible);
+			InventoryWidget->InventoryBox->SetIsEnabled(false);
+		}
 		return true;
 	}
 	else
@@ -168,5 +211,84 @@ void UMainUserWidget::OnSkillButtonClicked()
 		SkillTree->SetVisibility(ESlateVisibility::Visible);
 		bTreeShown = true;
 	}
+}
+
+void UMainUserWidget::OnInventoryButtonClicked()
+{
+	if(bInventoryVisibling)
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Hidden);
+		bInventoryVisibling = false;
+	}
+	else
+	{
+		InventoryWidget->SetVisibility(ESlateVisibility::Visible);
+		bInventoryVisibling = true;
+	}
+}
+
+void UMainUserWidget::AddItemToObtainedQueue(TSubclassOf<ABaseItem> ItemClass, int Amount)
+{
+	if(!ObtainedItemQueue.IsEmpty())
+	{
+		ObtainedItemQueue.Enqueue(FInventorySlot{ItemClass,Amount});
+	}
+	else
+	{
+		UItemObtainWidget* ObtainWidget = CreateWidget<UItemObtainWidget>(GetWorld(),
+			LoadClass<UItemObtainWidget>(GetWorld(),TEXT("WidgetBlueprint'/Game/BluePrints/UserWidget/Inventory/WBP_ItemObtain.WBP_ItemObtain_C'")));
+		ObtainWidget->Init(ItemClass,Amount,this);
+		ObtainContainer->AddChild(ObtainWidget);
+		ObtainedItemQueue.Enqueue(FInventorySlot{ItemClass,Amount});
+	}
+}
+
+void UMainUserWidget::OnObtainMessageEnd()
+{
+	ObtainedItemQueue.Pop();
+	ObtainContainer->ClearChildren();
+	if(!ObtainedItemQueue.IsEmpty())
+	{
+		UItemObtainWidget* ObtainWidget = CreateWidget<UItemObtainWidget>(GetWorld(),
+			LoadClass<UItemObtainWidget>(GetWorld(),TEXT("WidgetBlueprint'/Game/BluePrints/UserWidget/Inventory/WBP_ItemObtain.WBP_ItemObtain_C'")));
+		FInventorySlot TempSlot;
+		ObtainedItemQueue.Peek(TempSlot);
+		ObtainWidget->Init(TempSlot.ItemClass,TempSlot.Amount,this);
+		ObtainContainer->AddChild(ObtainWidget);
+	}
+}
+
+void UMainUserWidget::OnSettingButtonClicked()
+{
+	if(bSettingVisibling)
+	{
+		SettingWidget->SetVisibility(ESlateVisibility::Hidden);
+		bSettingVisibling = false;
+	}
+	else
+	{
+		SettingWidget->SetVisibility(ESlateVisibility::Visible);
+		bSettingVisibling = true;
+	}
+}
+
+void UMainUserWidget::GenerateItemHotKeys(TArray<FKey> ItemKeysToGenerate)
+{
+	ItemHotKeyWidgets.Empty();
+	ItemHotKeyBar->ClearChildren();
+	for(FKey Key : ItemKeysToGenerate)
+	{
+		UItemHotKey* ItemHotKey = CreateWidget<UItemHotKey>(GetWorld(),
+			LoadClass<UItemHotKey>(GetWorld(),TEXT("WidgetBlueprint'/Game/BluePrints/UserWidget/Inventory/WBP_ItemHotKey.WBP_ItemHotKey_C'")));
+		ItemHotKey->Init(Key,Inventory);
+		ItemHotKeyWidgets.Add(ItemHotKey);
+		ItemHotKeyBar->AddChild(ItemHotKey);
+	}
+}
+
+void UMainUserWidget::SkillTreeShow()
+{
+	SkillTreeComponent->HandleShowCommand();
+	UE_LOG(LogTemp, Warning, TEXT("SkillTreeComponent->HandleShowCommand()"));
 }
 

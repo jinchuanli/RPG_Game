@@ -23,7 +23,6 @@ void UQuestJournal::NativeConstruct()
 {
 	Super::NativeConstruct();
 	SelectButton->OnClicked.AddDynamic(this,&UQuestJournal::OnSelectButtonClicked);
-	UE_LOG(LogTemp,Warning,TEXT("NativeQuestJournal"));
 }
 
 void UQuestJournal::OnSelectButtonClicked()
@@ -200,7 +199,7 @@ void UQuestJournal::OnQuestClicked(UQuestListEntry* ClickedQuestListEntry)
 		SelectedQuest = CurrentQuestListEntry->AssignedQuest;
 		UpdateDetailWindow();
 		CurrentQuestListEntry->SetIsEnabled(false);
-		UE_LOG(LogTemp,Warning,TEXT("qqqqqqq"));
+		//UE_LOG(LogTemp,Warning,TEXT("qqqqqqq"));
 	}
 	else
 	{

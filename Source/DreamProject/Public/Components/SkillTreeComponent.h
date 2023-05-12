@@ -23,6 +23,7 @@ public:
 	TArray<FTreeCategory> Categories;
 	
 	// Sets default values for this component's properties
+	
 	USkillTreeComponent();
 
 protected:
@@ -49,6 +50,7 @@ public:
 	void UpgradeSpell(ABaseSkill* SkillActor,class USkillTreeEntryWidget* EntryWidget_F);
 	void DowngradeSpell(ABaseSkill* SkillActor,class USkillTreeEntryWidget* EntryWidget);
 
+	UFUNCTION()
 	void HandleShowCommand();   //处理显示和隐藏的命令
 
 	void SetUpTree();
